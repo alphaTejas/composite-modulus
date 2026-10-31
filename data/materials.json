@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "unit": "GPa",
+  "materials": [
+    {
+      "id": "stiff_inclusions",
+      "name": "Stiff spherical inclusions (illustrative)",
+      "Ef": 70.0,
+      "Em": 3.5,
+      "nu_f": 0.20,
+      "nu_m": 0.35,
+      "xi": 2.0,
+      "geometry": "spherical",
+      "source_status": "illustrative",
+      "source_note": "Hypothetical teaching inputs, not measured glass/epoxy data. xi=2 is an uncalibrated parameter demonstration and is not a spherical-model calibration."
+    },
+    {
+      "id": "moderate_contrast",
+      "name": "Moderate stiffness contrast (illustrative)",
+      "Ef": 30.0,
+      "Em": 3.0,
+      "nu_f": 0.30,
+      "nu_m": 0.35,
+      "xi": 2.0,
+      "geometry": "spherical",
+      "source_status": "illustrative",
+      "source_note": "Hypothetical sensitivity case, not a measured biocomposite dataset. Real natural fibers require geometry and anisotropic-property decisions. xi=2 is an uncalibrated demonstration."
+    },
+    {
+      "id": "soft_inclusions",
+      "name": "Soft spherical inclusions (illustrative)",
+      "Ef": 1.0,
+      "Em": 10.0,
+      "nu_f": 0.30,
+      "nu_m": 0.25,
+      "xi": 2.0,
+      "geometry": "spherical",
+      "source_status": "illustrative",
+      "source_note": "Hypothetical case to check softening and reversed phase ordering. The inclusion is a solid, not a void. xi=2 is an uncalibrated demonstration."
+    }
+  ]
+}
