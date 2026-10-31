@@ -1,5 +1,9 @@
 # Composite Modulus: analytical major-project framework
 
+**Live calculator:** [Composite Modulus Lab](https://composite-modulus-lab.streamlit.app/)
+
+**Source code:** [alphaTejas/composite-modulus](https://github.com/alphaTejas/composite-modulus)
+
 Predict effective elastic Young's modulus using six model families. This is
 a complete runnable implementation of the agreed **isotropic spherical-inclusion
 scope**, with illustrative material studies, reproducible results and a report.
@@ -154,8 +158,8 @@ to shared project files. No external API key or database is required.
 For Streamlit Community Cloud, select this repository's `main` branch and
 `app.py` as the entry point, with Python 3.12. Dependencies are listed in
 `requirements.txt`; theme/server settings are in `.streamlit/config.toml`.
-Keep `.streamlit/secrets.toml` untracked if secrets are ever added. The initial
-repository is private; Streamlit must be authorized to access it by its owner.
+Keep `.streamlit/secrets.toml` untracked if secrets are ever added. This
+repository and the deployed app are public, as authorized by the owner.
 
 Generated `outputs/` are intentionally not tracked on GitHub. Run the existing
 command-line workflow to regenerate them after a clone. The original local
