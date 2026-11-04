@@ -139,7 +139,9 @@ project distribution.
 
 ## Streamlit website
 
-The web interface calls the same analytical functions as `main.py`.
+The web interface offers **Eshelby / dilute and Mori-Tanaka only** and calls
+the same analytical model functions as `main.py`. The command-line framework
+continues to provide the original six model families.
 
 ```sh
 python -m pip install -r requirements.txt
@@ -149,10 +151,11 @@ streamlit run app.py
 Select an illustrative material or custom inputs in the sidebar, enter phase
 properties and Vf, select method families, then click Calculate. Vm is 1-Vf.
 The unit selector converts preset moduli to the chosen unit; any edited values
-must also use that unit. Compare-fraction charts keep the isotropic models,
-low-fraction dilute calculation and scalar HT demonstration in separate views.
-Downloads include the selected rows, sweep, input snapshot, chart and example
-PDF study material. Visitor results are generated in memory and are not written
+must also use that unit. Compare-fraction charts show the two inclusion models
+over the full requested range or in a low-fraction detail view. Eshelby / dilute
+is displayed only through Vf=0.1 as an educational restriction, not a universal
+accuracy threshold. Downloads include only the selected methods' rows, sweep,
+input snapshot and chart. Visitor results are generated in memory and are not written
 to shared project files. No external API key or database is required.
 
 For Streamlit Community Cloud, select this repository's `main` branch and

@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import streamlit as st
 
-from analysis.compare_models import evaluate, sweep
 from analysis.web_results import (
-    FAMILIES, LABELS, comparison_figure, csv_bytes, material_from_record, selected_rows,
+    FAMILIES, LABELS, comparison_figure, csv_bytes, evaluate, material_from_record,
+    selected_rows, sweep,
 )
 from utilities.materials import Material, load_materials
 
@@ -53,8 +53,6 @@ def render():
             nu_m = st.number_input("Matrix Poisson ratio νm", min_value=-.999, max_value=.499,
                                    value=preset.nu_m, step=.01, format="%.3f", key="num_" + suffix)
             Vf = st.slider("Inclusion volume fraction Vf", 0.0, 1.0, .05, .01, key="vf_" + suffix)
-            xi = st.number_input("Halpin-Tsai parameter ξ", min_value=0.0, value=preset.xi,
-                                 step=.5, help="Use a geometry/loading justification. The examples use an uncalibrated demonstration value.")
             families = st.multiselect("Model families", list(FAMILIES), default=list(FAMILIES))
             st.form_submit_button("Calculate", type="primary", use_container_width=True)
         st.caption("Two phases without voids. Vm is calculated as 1 − Vf. All moduli use the unit selected above.")
@@ -62,14 +60,14 @@ def render():
 
     st.caption("ANALYTICAL COMPOSITE MECHANICS")
     st.title("Composite Modulus Lab")
-    st.markdown("Explore how constituent stiffness and inclusion content change a composite's **effective Young's modulus**.")
+    st.markdown("Predict a composite's **effective Young's modulus** with **Eshelby / dilute** and **Mori-Tanaka**.")
     try:
         material = Material.from_dict({
             "id": preset_id, "name": "Current material inputs", "Ef": Ef, "Em": Em,
-            "nu_f": nu_f, "nu_m": nu_m, "xi": xi, "geometry": "spherical",
+            "nu_f": nu_f, "nu_m": nu_m, "xi": preset.xi, "geometry": "spherical",
             "source_status": "user_supplied" if preset_id == "custom" else "illustrative / editable",
             "source_note": "Visitor-entered values; source, isotropy and geometry must be justified."
-                           if preset_id == "custom" else preset.source_note + " Values can be edited in the sidebar.",
+                           if preset_id == "custom" else "Hypothetical teaching inputs, not measured material data. Values can be edited in the sidebar.",
         }, unit)
         rows = evaluate(material, Vf)
     except (ValueError, RuntimeError, OverflowError) as exc:
@@ -80,7 +78,7 @@ def render():
     calculator, comparison, theory, downloads = st.tabs(["Calculator", "Compare fractions", "Theory & assumptions", "Downloads"])
 
     with calculator:
-        metric_models = [name for name in ["mori_tanaka", "self_consistent", "eshelby_dilute"]
+        metric_models = [name for name in ["eshelby_dilute", "mori_tanaka"]
                          if any(r["model"] == name for r in selected)]
         if metric_models:
             columns = st.columns(len(metric_models))
@@ -94,18 +92,16 @@ def render():
             st.warning("Select at least one model family in Study setup and click Calculate.")
         if Vf > .1:
             st.caption("Dilute is omitted above Vf=0.1 in this teaching workflow. The cutoff is not a universal accuracy threshold.")
-        sc = next(r for r in rows if r["model"] == "self_consistent")
         with st.expander("Calculation details"):
-            st.write({"Self-consistent maximum residual": sc["residual_norm"],
-                      "Self-consistent iterations": sc["iterations"],
-                      "Input source status": material.source_status})
-            st.caption("Residual checks verify the analytical equations; they do not establish experimental accuracy.")
+            st.write({"Input source status": material.source_status,
+                      "Inclusion geometry": material.geometry})
+            st.caption("Both methods assume isotropic elastic phases and perfect bonding. Eshelby / dilute neglects inclusion interactions; Mori-Tanaka uses the average matrix strain.")
 
     with comparison:
         left, right = st.columns(2)
         vf_max = left.slider("Sweep maximum Vf", .1, 1.0, .6, .05)
         points = right.select_slider("Requested grid points", options=[21, 41, 61, 101], value=61)
-        mode = st.radio("Comparison view", ["Isotropic comparison", "Low-fraction detail", "Scalar / Halpin-Tsai demonstration"], horizontal=True)
+        mode = st.radio("Comparison view", ["Full fraction range", "Low-fraction detail"], horizontal=True)
         with st.spinner("Calculating the selected fraction range…"):
             sweep_rows = cached_sweep(json.dumps(material.to_dict(), sort_keys=True), vf_max, points)
         visible_sweep = selected_rows(sweep_rows, families)
@@ -114,12 +110,7 @@ def render():
         image = io.BytesIO()
         figure.savefig(image, format="png", dpi=180, bbox_inches="tight")
         plt.close(figure)
-        if mode == "Scalar / Halpin-Tsai demonstration":
-            st.caption(f"ξ={xi:g} is shown as a parameter demonstration. Justify geometry and loading before claiming an equivalent material prediction.")
-        elif mode == "Isotropic comparison":
-            st.caption("Shaded bands are theoretical intervals, not experimental error bars. MT can coincide with an HS boundary. Cross-ordered HS bounds are omitted.")
-        else:
-            st.caption("Dilute neglects inclusion interactions. This view displays Vf≤0.1 without claiming a universal validity range.")
+        st.caption("Eshelby / dilute is displayed only for Vf≤0.1 because it neglects inclusion interactions. This teaching cutoff is not a universal validity threshold.")
         st.download_button("Download current chart (PNG)", image.getvalue(), "composite_modulus_chart.png", "image/png")
 
     with theory:
@@ -128,12 +119,8 @@ def render():
         st.latex(r"V_f+V_m=1,\qquad K=\frac{E}{3(1-2\nu)},\qquad G=\frac{E}{2(1+\nu)}")
         st.latex(r"E_{\mathrm{eff}}=\frac{9K_{\mathrm{eff}}G_{\mathrm{eff}}}{3K_{\mathrm{eff}}+G_{\mathrm{eff}}}")
         descriptions = {
-            "Rule of Mixtures": "Equal-strain and equal-stress scalar E idealizations are provided alongside separate full 3D isotropic Voigt/Reuss bounds. Their arithmetic E upper estimate need not match the 3D Voigt bound when phase Poisson ratios differ.",
             "Eshelby / dilute": "A spherical Eshelby tensor determines strain concentration. The dilute stiffness estimate neglects interactions and is displayed only through Vf=0.1. That is an educational restriction, not a universal accuracy guarantee.",
             "Mori-Tanaka": "Uses the average matrix strain as the surrounding reference. The existing tensor implementation normalizes Eshelby-based strain concentration and returns effective K, G, E and ν.",
-            "Self-consistent": "Embeds each phase in the unknown effective medium. The analytical bulk equation is eliminated at a trial shear modulus and the shear equation is solved by logarithmic bisection.",
-            "Hashin-Shtrikman bounds": "Bounds an isotropic effective medium for phases ordered in both K and G. Ordering only by E is insufficient. The returned ν values describe bounding tensors; they are not separate bounds on ν.",
-            "Halpin-Tsai": "A semi-empirical scalar estimate requiring an explicit ξ. The presets do not calibrate ξ to a sphere or woven material, so its curve is displayed separately.",
         }
         for family, description in descriptions.items():
             with st.expander(family):
@@ -145,19 +132,13 @@ def render():
         st.markdown("### Take the results with you")
         st.download_button("Download current results (CSV)", csv_bytes(selected), "composite_modulus_results.csv", "text/csv")
         st.download_button("Download fraction sweep (CSV)", csv_bytes(visible_sweep), "composite_modulus_sweep.csv", "text/csv")
-        payload = {"material": material.to_dict(), "Vf": Vf, "Vm": 1-Vf,
+        payload = {"material": {key: value for key, value in material.to_dict().items() if key != "xi"}, "Vf": Vf, "Vm": 1-Vf,
                    "selected_families": families, "results": selected,
                    "experimental_validation": False}
         st.download_button("Download inputs and results (JSON)", json.dumps(payload, indent=2),
                            "composite_modulus_case.json", "application/json")
-        for name, label in [("analytical_code_guide.pdf", "Download analytical code study guide (PDF)"),
-                            ("example_project_report.pdf", "Download illustrative project report (PDF)")]:
-            path = ROOT / "docs" / name
-            if path.exists():
-                st.download_button(label, path.read_bytes(), name, "application/pdf")
-        st.caption("The study guide explains the analytical core before the web interface was added. The example report contains the original illustrative cases, not your current edited inputs.")
     st.divider()
-    st.caption("Composite Modulus Lab · Six analytical model families · Calculations reuse the original Python code · Visitor inputs are not saved to project files.")
+    st.caption("Composite Modulus Lab · Eshelby / dilute and Mori-Tanaka · Visitor inputs are not saved to project files.")
 
 
 if __name__ == "__main__":

@@ -6,25 +6,48 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from analysis.compare_models import FIELDS
+from analysis.compare_models import FIELDS, fraction_grid
+from models import eshelby_dilute, mori_tanaka
+from utilities.input_checks import fractions
 from utilities.materials import Material
 
 
 FAMILIES = {
-    "Rule of Mixtures": ["simple_voigt", "simple_reuss", "isotropic_vr_lower", "isotropic_vr_upper"],
     "Eshelby / dilute": ["eshelby_dilute"],
     "Mori-Tanaka": ["mori_tanaka"],
-    "Self-consistent": ["self_consistent"],
-    "Hashin-Shtrikman bounds": ["hs_lower", "hs_upper"],
-    "Halpin-Tsai": ["halpin_tsai_demo"],
 }
 LABELS = {
-    "simple_voigt": "Simple equal-strain E", "simple_reuss": "Simple equal-stress E",
-    "isotropic_vr_lower": "Isotropic Reuss lower bound", "isotropic_vr_upper": "Isotropic Voigt upper bound",
     "eshelby_dilute": "Eshelby / dilute", "mori_tanaka": "Mori-Tanaka",
-    "self_consistent": "Self-consistent", "hs_lower": "Hashin-Shtrikman lower bound",
-    "hs_upper": "Hashin-Shtrikman upper bound", "halpin_tsai_demo": "Halpin-Tsai demonstration",
 }
+
+
+def evaluate(material, Vf):
+    """Calculate only the two inclusion models offered by the website."""
+    Vf, Vm = fractions(Vf)
+    inp = material.inputs(Vf)
+    rows = []
+
+    def add(model, values=None, status="ok", note=""):
+        row = dict.fromkeys(FIELDS, "")
+        row.update(case=material.id, unit=material.unit, Vf=Vf, Vm=Vm,
+                   model=model, status=status, note=note)
+        if values is not None:
+            row.update({key: value for key, value in values.items() if key in FIELDS})
+        rows.append(row)
+
+    if Vf <= 0.1 + 1e-12:
+        add("eshelby_dilute", eshelby_dilute(**{**inp, "Vf": min(Vf, 0.1)}),
+            status="low_fraction", note="No inclusion interactions; accuracy is contrast-dependent.")
+    else:
+        add("eshelby_dilute", status="not_evaluated",
+            note="Outside the configured low-fraction display interval (Vf<=0.1).")
+    add("mori_tanaka", mori_tanaka(**inp),
+        note="Spherical inclusions in a connected isotropic matrix.")
+    return rows
+
+
+def sweep(material, *, vf_max=0.6, points=61):
+    return [row for vf in fraction_grid(vf_max, points) for row in evaluate(material, vf)]
 
 
 def selected_rows(rows, families):
@@ -46,7 +69,7 @@ def material_from_record(record):
     return Material.from_dict(raw, unit)
 
 
-def comparison_figure(rows, unit, *, mode="Isotropic comparison"):
+def comparison_figure(rows, unit, *, mode="Full fraction range"):
     """Create a figure in memory; never write visitor results to shared disk."""
     fig, ax = plt.subplots(figsize=(9, 4.8), layout="constrained")
 
@@ -56,24 +79,9 @@ def comparison_figure(rows, unit, *, mode="Isotropic comparison"):
             items = [r for r in items if r["Vf"] <= .1 + 1e-12]
         return [r["Vf"] for r in items], [r["E"] for r in items]
 
-    if mode == "Isotropic comparison":
-        for lo, hi, color, label in [
-            ("isotropic_vr_lower", "isotropic_vr_upper", "#E5ECF3", "Isotropic Voigt-Reuss interval"),
-            ("hs_lower", "hs_upper", "#ACDBDC", "Hashin-Shtrikman interval"),
-        ]:
-            x, lower = series(lo)
-            xu, upper = series(hi)
-            if x and x == xu:
-                ax.fill_between(x, lower, upper, color=color, alpha=.8, label=label)
-        specs = [("mori_tanaka", "#087F8C", "-"), ("self_consistent", "#153B57", "--")]
-    elif mode == "Low-fraction detail":
-        specs = [("eshelby_dilute", "#CD8625", "-"), ("mori_tanaka", "#087F8C", "--"),
-                 ("self_consistent", "#153B57", ":")]
-    elif mode == "Scalar / Halpin-Tsai demonstration":
-        specs = [("simple_voigt", "#7A899B", "--"), ("simple_reuss", "#153B57", ":"),
-                 ("halpin_tsai_demo", "#8460A9", "-")]
-    else:
+    if mode not in {"Full fraction range", "Low-fraction detail"}:
         raise ValueError("Unknown chart mode.")
+    specs = [("eshelby_dilute", "#CD8625", "-"), ("mori_tanaka", "#087F8C", "--")]
     for name, color, style in specs:
         x, y = series(name)
         if x:
