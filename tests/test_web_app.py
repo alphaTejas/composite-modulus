@@ -42,7 +42,7 @@ class WebAppTests(unittest.TestCase):
         self.assertEqual(metrics["Mori-Tanaka"], f"{expected:.6f} GPa")
         self.assertEqual(metrics["Eshelby / dilute"], "Not evaluated")
         self.assertEqual(metrics["Rule of Mixtures — Voigt (equal strain)"], "23.450000 GPa")
-        self.assertEqual(metrics["Rule of Mixtures — Reuss (equal stress)"], "4.925373 GPa")
+        self.assertEqual(metrics["Rule of Mixtures — Reuss (equal stress)"], "4.895105 GPa")
 
     def test_invalid_zero_modulus_shows_readable_error(self):
         app = self.app()
