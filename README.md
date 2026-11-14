@@ -139,7 +139,7 @@ project distribution.
 
 ## Streamlit website
 
-The web interface offers **Eshelby / dilute and Mori-Tanaka only** and calls
+The web interface offers **Rule of Mixtures (Voigt and Reuss), Eshelby / dilute and Mori-Tanaka** and calls
 the same analytical model functions as `main.py`. The command-line framework
 continues to provide the original six model families.
 
@@ -151,7 +151,7 @@ streamlit run app.py
 Select an illustrative material or custom inputs in the sidebar, enter phase
 properties and Vf, select method families, then click Calculate. Vm is 1-Vf.
 The unit selector converts preset moduli to the chosen unit; any edited values
-must also use that unit. Compare-fraction charts show the two inclusion models
+must also use that unit. Compare-fraction charts show both simple mixture estimates and the two inclusion models
 over the full requested range or in a low-fraction detail view. Eshelby / dilute
 is displayed only through Vf=0.1 as an educational restriction, not a universal
 accuracy threshold. Downloads include only the selected methods' rows, sweep,
