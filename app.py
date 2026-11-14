@@ -80,6 +80,7 @@ def render():
     with calculator:
         metric_models = [name for name in ["simple_voigt", "simple_reuss", "eshelby_dilute", "mori_tanaka"]
                          if any(r["model"] == name for r in selected)]
+                         if any(r["model"] == name for r in selected)]
         if metric_models:
             columns = st.columns(len(metric_models))
             for column, name in zip(columns, metric_models):
