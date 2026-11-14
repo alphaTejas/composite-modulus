@@ -75,7 +75,7 @@ def render():
         st.stop()
     selected = selected_rows(rows, families)
     st.info("The presets are illustrative teaching inputs. The 3D models assume isotropic spherical inclusions; they do not predict woven or cylindrical-fiber architecture.")
-    calculator, comparison, theory, downloads = st.tabs(["Calculator", "Compare fractions", "Theory & assumptions", "Downloads"])
+    calculator, rom_tab, comparison, theory, downloads = st.tabs(["Calculator", "Rule of Mixtures", "Compare fractions", "Theory & assumptions", "Downloads"])
 
     with calculator:
         metric_models = [name for name in ["simple_voigt", "simple_reuss", "eshelby_dilute", "mori_tanaka"]
@@ -96,6 +96,31 @@ def render():
             st.write({"Input source status": material.source_status,
                       "Inclusion geometry": material.geometry})
             st.caption("Both methods assume isotropic elastic phases and perfect bonding. Eshelby / dilute neglects inclusion interactions; Mori-Tanaka uses the average matrix strain.")
+
+    with rom_tab:
+        st.subheader("Rule of Mixtures — direct and inverse")
+        st.write("Both calculations use the same material inputs shown in the sidebar. "
+                 "They are simple one-dimensional composite estimates, displayed here "
+                 "as reference models alongside Eshelby and Mori-Tanaka.")
+        voigt_row = next(row for row in rows if row["model"] == "simple_voigt")
+        reuss_row = next(row for row in rows if row["model"] == "simple_reuss")
+        left_rom, right_rom = st.columns(2)
+        with left_rom:
+            st.markdown("**Direct / Voigt — equal strain**")
+            st.latex(r"E_{\\parallel}=V_f E_f+(1-V_f)E_m")
+            st.write(f"**Calculated modulus: {voigt_row['E']:.6f} {unit}**")
+            st.caption("Ideal continuous aligned-fibre model for load parallel to fibres.")
+        with right_rom:
+            st.markdown("**Inverse / Reuss — equal stress**")
+            st.latex(r"E_{\\mathrm{series}}=\\left(\\frac{V_f}{E_f}+\\frac{1-V_f}{E_m}\\right)^{-1}")
+            st.write(f"**Calculated modulus: {reuss_row['E']:.6f} {unit}**")
+            st.caption("Ideal equal-stress series model; useful as a simple lower estimate.")
+        st.markdown(f"**Current mixture:** inclusion fraction = {Vf:.2f}; matrix fraction = {1-Vf:.2f}.")
+        st.info("For the spherical-inclusion presets, these equations are idealized benchmarks "
+                "and do not represent the exact 3-D composite response. "
+                "Use the Calculator and Compare fractions tabs to view them beside the "
+                "Eshelby and Mori-Tanaka predictions.")
+        st.caption("Change Ef, Em or Vf in Study setup, then click Calculate to update the values.")
 
     with comparison:
         left, right = st.columns(2)
