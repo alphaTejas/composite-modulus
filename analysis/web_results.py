@@ -26,7 +26,7 @@ LABELS = {
 
 
 def evaluate(material, Vf):
-    """Calculate only the two inclusion models offered by the website."""
+    """Calculate the two 1-D mixture estimates and two inclusion models for the website."""
     Vf, Vm = fractions(Vf)
     inp = material.inputs(Vf)
     rows = []
