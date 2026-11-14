@@ -60,7 +60,7 @@ def render():
 
     st.caption("ANALYTICAL COMPOSITE MECHANICS")
     st.title("Composite Modulus Lab")
-    st.markdown("Predict a composite's **effective Young's modulus** with **Eshelby / dilute** and **Mori-Tanaka**.")
+    st.markdown("Compare **Rule of Mixtures (Voigt and Reuss)**, **Eshelby / dilute**, and **Mori-Tanaka** estimates of effective Young's modulus.")
     try:
         material = Material.from_dict({
             "id": preset_id, "name": "Current material inputs", "Ef": Ef, "Em": Em,
@@ -78,7 +78,8 @@ def render():
     calculator, comparison, theory, downloads = st.tabs(["Calculator", "Compare fractions", "Theory & assumptions", "Downloads"])
 
     with calculator:
-        metric_models = [name for name in ["eshelby_dilute", "mori_tanaka"]
+        metric_models = [name for name in ["simple_voigt", "simple_reuss", "eshelby_dilute", "mori_tanaka"]
+                         if any(r["model"] == name for r in selected)]
                          if any(r["model"] == name for r in selected)]
         if metric_models:
             columns = st.columns(len(metric_models))
@@ -110,7 +111,7 @@ def render():
         image = io.BytesIO()
         figure.savefig(image, format="png", dpi=180, bbox_inches="tight")
         plt.close(figure)
-        st.caption("Eshelby / dilute is displayed only for Vf≤0.1 because it neglects inclusion interactions. This teaching cutoff is not a universal validity threshold.")
+        st.caption("Voigt and Reuss are 1-D equal-strain/equal-stress estimates, not general 3-D Young's-modulus bounds. Eshelby / dilute is displayed only for Vf≤0.1 because it neglects inclusion interactions; this teaching cutoff is not a universal validity threshold.")
         st.download_button("Download current chart (PNG)", image.getvalue(), "composite_modulus_chart.png", "image/png")
 
     with theory:
@@ -118,7 +119,9 @@ def render():
         st.write("Young's modulus E measures elastic stiffness, not failure strength. Homogenization replaces the assumed internal structure with an equivalent material.")
         st.latex(r"V_f+V_m=1,\qquad K=\frac{E}{3(1-2\nu)},\qquad G=\frac{E}{2(1+\nu)}")
         st.latex(r"E_{\mathrm{eff}}=\frac{9K_{\mathrm{eff}}G_{\mathrm{eff}}}{3K_{\mathrm{eff}}+G_{\mathrm{eff}}}")
+        st.latex(r"E_{\mathrm{Voigt}}=V_fE_f+V_mE_m,\qquad E_{\mathrm{Reuss}}=\left(\frac{V_f}{E_f}+\frac{V_m}{E_m}\right)^{-1}")
         descriptions = {
+            "Rule of Mixtures": "Voigt assumes equal strain in the two phases; Reuss assumes equal stress. These 1-D estimates do not model inclusion geometry and are not generally 3-D isotropic bounds on E.",
             "Eshelby / dilute": "A spherical Eshelby tensor determines strain concentration. The dilute stiffness estimate neglects interactions and is displayed only through Vf=0.1. That is an educational restriction, not a universal accuracy guarantee.",
             "Mori-Tanaka": "Uses the average matrix strain as the surrounding reference. The existing tensor implementation normalizes Eshelby-based strain concentration and returns effective K, G, E and ν.",
         }
@@ -138,7 +141,7 @@ def render():
         st.download_button("Download inputs and results (JSON)", json.dumps(payload, indent=2),
                            "composite_modulus_case.json", "application/json")
     st.divider()
-    st.caption("Composite Modulus Lab · Eshelby / dilute and Mori-Tanaka · Visitor inputs are not saved to project files.")
+    st.caption("Composite Modulus Lab · Rule of Mixtures, Eshelby / dilute and Mori-Tanaka · Visitor inputs are not saved to project files.")
 
 
 if __name__ == "__main__":
