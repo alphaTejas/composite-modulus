@@ -20,9 +20,13 @@ class WebAppTests(unittest.TestCase):
         metrics = {m.label: m.value for m in app.metric}
         self.assertEqual(metrics["Mori-Tanaka"], "3.847096 GPa")
         self.assertEqual(metrics["Eshelby / dilute"], "3.831404 GPa")
-        self.assertEqual(set(metrics), {"Eshelby / dilute", "Mori-Tanaka"})
-        self.assertEqual(len(app.dataframe[0].value), 2)
-        self.assertEqual(app.multiselect[0].options, ["Eshelby / dilute", "Mori-Tanaka"])
+        self.assertEqual(metrics["Rule of Mixtures — Voigt (equal strain)"], "6.825000 GPa")
+        self.assertEqual(metrics["Rule of Mixtures — Reuss (equal stress)"], "3.674541 GPa")
+        self.assertEqual(set(metrics), {"Rule of Mixtures — Voigt (equal strain)",
+                                        "Rule of Mixtures — Reuss (equal stress)",
+                                        "Eshelby / dilute", "Mori-Tanaka"})
+        self.assertEqual(len(app.dataframe[0].value), 4)
+        self.assertEqual(app.multiselect[0].options, ["Rule of Mixtures", "Eshelby / dilute", "Mori-Tanaka"])
         self.assertNotIn("ξ", " ".join(widget.label for widget in app.number_input))
         self.assertEqual(next(w for w in app.radio if w.label == "Comparison view").options,
                          ["Full fraction range", "Low-fraction detail"])
@@ -37,6 +41,8 @@ class WebAppTests(unittest.TestCase):
         metrics = {m.label: m.value for m in app.metric}
         self.assertEqual(metrics["Mori-Tanaka"], f"{expected:.6f} GPa")
         self.assertEqual(metrics["Eshelby / dilute"], "Not evaluated")
+        self.assertEqual(metrics["Rule of Mixtures — Voigt (equal strain)"], "23.450000 GPa")
+        self.assertEqual(metrics["Rule of Mixtures — Reuss (equal stress)"], "4.925373 GPa")
 
     def test_invalid_zero_modulus_shows_readable_error(self):
         app = self.app()
@@ -69,12 +75,22 @@ class WebAppTests(unittest.TestCase):
         material = load_materials(ROOT / "data/materials.json")["stiff_inclusions"]
         rows = evaluate(material, .3)
         exported = list(csv.DictReader(io.StringIO(csv_bytes(rows).decode())))
-        self.assertEqual({r["model"] for r in exported}, {"eshelby_dilute", "mori_tanaka"})
+        self.assertEqual({r["model"] for r in exported}, {"simple_voigt", "simple_reuss", "eshelby_dilute", "mori_tanaka"})
         self.assertEqual({r["model"] for r in sweep(material, points=2)},
-                         {"eshelby_dilute", "mori_tanaka"})
+                         {"simple_voigt", "simple_reuss", "eshelby_dilute", "mori_tanaka"})
         dilute = next(r for r in exported if r["model"] == "eshelby_dilute")
         self.assertEqual(dilute["E"], "")
         self.assertEqual(dilute["status"], "not_evaluated")
+
+    def test_rule_of_mixtures_selection_has_two_rows(self):
+        app = self.app()
+        app.multiselect[0].set_value(["Rule of Mixtures"])
+        app.button[0].click().run()
+        self.assertFalse(app.exception)
+        self.assertEqual(
+            set(app.dataframe[0].value["Method"]),
+            {"Rule of Mixtures — Voigt (equal strain)", "Rule of Mixtures — Reuss (equal stress)"}
+        )
 
     def test_empty_selection_and_low_fraction_chart(self):
         app = self.app()
