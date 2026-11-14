@@ -107,12 +107,12 @@ def render():
         left_rom, right_rom = st.columns(2)
         with left_rom:
             st.markdown("**Direct / Voigt — equal strain**")
-            st.latex(r"E_{\\parallel}=V_f E_f+(1-V_f)E_m")
+            st.latex(r"E_{\parallel}=V_f E_f+(1-V_f)E_m")
             st.write(f"**Calculated modulus: {voigt_row['E']:.6f} {unit}**")
             st.caption("Ideal continuous aligned-fibre model for load parallel to fibres.")
         with right_rom:
             st.markdown("**Inverse / Reuss — equal stress**")
-            st.latex(r"E_{\\mathrm{series}}=\\left(\\frac{V_f}{E_f}+\\frac{1-V_f}{E_m}\\right)^{-1}")
+            st.latex(r"E_{\mathrm{series}}=\left(\frac{V_f}{E_f}+\frac{1-V_f}{E_m}\right)^{-1}")
             st.write(f"**Calculated modulus: {reuss_row['E']:.6f} {unit}**")
             st.caption("Ideal equal-stress series model; useful as a simple lower estimate.")
         st.markdown(f"**Current mixture:** inclusion fraction = {Vf:.2f}; matrix fraction = {1-Vf:.2f}.")
