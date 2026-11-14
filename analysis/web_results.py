@@ -7,17 +7,21 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from analysis.compare_models import FIELDS, fraction_grid
-from models import eshelby_dilute, mori_tanaka
+from models import eshelby_dilute, mori_tanaka, rule_of_mixtures
 from utilities.input_checks import fractions
 from utilities.materials import Material
 
 
 FAMILIES = {
+    "Rule of Mixtures": ["simple_voigt", "simple_reuss"],
     "Eshelby / dilute": ["eshelby_dilute"],
     "Mori-Tanaka": ["mori_tanaka"],
 }
 LABELS = {
-    "eshelby_dilute": "Eshelby / dilute", "mori_tanaka": "Mori-Tanaka",
+    "simple_voigt": "Rule of Mixtures — Voigt (equal strain)",
+    "simple_reuss": "Rule of Mixtures — Reuss (equal stress)",
+    "eshelby_dilute": "Eshelby / dilute",
+    "mori_tanaka": "Mori-Tanaka",
 }
 
 
@@ -34,6 +38,12 @@ def evaluate(material, Vf):
         if values is not None:
             row.update({key: value for key, value in values.items() if key in FIELDS})
         rows.append(row)
+
+    mixtures = rule_of_mixtures(material.Ef, material.Em, Vf, Vm)
+    add("simple_voigt", {"E": mixtures["E_voigt"]}, status="idealization",
+        note="1-D equal-strain E estimate; not generally a 3-D isotropic upper bound.")
+    add("simple_reuss", {"E": mixtures["E_reuss"]}, status="idealization",
+        note="1-D equal-stress E estimate; not generally a 3-D isotropic lower bound.")
 
     if Vf <= 0.1 + 1e-12:
         add("eshelby_dilute", eshelby_dilute(**{**inp, "Vf": min(Vf, 0.1)}),
@@ -81,7 +91,12 @@ def comparison_figure(rows, unit, *, mode="Full fraction range"):
 
     if mode not in {"Full fraction range", "Low-fraction detail"}:
         raise ValueError("Unknown chart mode.")
-    specs = [("eshelby_dilute", "#CD8625", "-"), ("mori_tanaka", "#087F8C", "--")]
+    specs = [
+        ("simple_voigt", "#6B4E9B", "-."),
+        ("simple_reuss", "#7B6750", ":"),
+        ("eshelby_dilute", "#CD8625", "-"),
+        ("mori_tanaka", "#087F8C", "--"),
+    ]
     for name, color, style in specs:
         x, y = series(name)
         if x:
